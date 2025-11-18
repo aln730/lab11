@@ -1,4 +1,35 @@
-force A    0000 0ns, 0001 50ns, 0010 100ns, 0100 150ns, 1000 200ns -repeat 250ns
-force B    0000 0ns, 0001 100ns, 0011 200ns, 0111 300ns -repeat 400ns
-force Add_Sub 0 0ns, 1 200ns -repeat 400ns
-force Cin 0 0ns, 1 400ns -repeat 800ns
+force A   0 0ns, 1 50ns -repeat 100ns
+force B   0 0ns, 1 100ns -repeat 200ns
+force Cin 0 0ns, 1 200ns -repeat 400ns
+run 500ns
+
+
+# Clock period
+force clk 0 0ns, 1 25ns -repeat 50ns
+
+# Clear pulse
+force clear 0 0ns, 1 10ns -repeat 100ns
+
+# Enable
+force en 0 0ns, 1 50ns -repeat 100ns
+
+# D input
+force D 0 0ns, 1 75ns -repeat 150ns
+
+run 300ns
+
+
+#AND 
+
+# Force input A
+force A 0 0ns, 1 25ns -repeat 50ns
+
+# Force input B
+force B 0 0ns, 1 50ns -repeat 100ns
+
+
+#INV
+
+
+# Force input A
+force A 0 0ns, 1 25ns -repeat 50ns

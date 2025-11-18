@@ -33,7 +33,7 @@ begin
         elsif rising_edge(Clock) then
 
             -- MODE decoding (S1 S0)
-            case (S1 & S0) is
+            case to_integer(unsigned(s1 & s0)) is
                 when "1X" =>
                     -- hold - do nothing (retain values)
                 when "11" =>
