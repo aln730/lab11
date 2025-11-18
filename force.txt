@@ -1,0 +1,4 @@
+force A    0000 0ns, 0001 50ns, 0010 100ns, 0100 150ns, 1000 200ns -repeat 250ns
+force B    0000 0ns, 0001 100ns, 0011 200ns, 0111 300ns -repeat 400ns
+force Add_Sub 0 0ns, 1 200ns -repeat 400ns
+force Cin 0 0ns, 1 400ns -repeat 800ns
