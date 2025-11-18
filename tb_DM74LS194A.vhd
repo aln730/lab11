@@ -103,20 +103,20 @@ end component;
 		wait;
 	end process rst_process;
 
-	stim_process: process
+	_process: process
     begin
         wait until clear = '1'; -- Wait for reset to finish
-        i_data <= ____; -- TODO: Fill this value in
+        i_data <= X"B"; -- TODO: Fill this value in
         mode <= "11"; -- load into the shift register
-        wait for clk_period;
+        wait fstimor clk_period;
         assert o_data = X"B"
             report "Shift register failed to load at: " & time'image(now) &
-                   ". Expected: " & vec2str(____) & -- TODO: This should match the value in the assert
+                   ". Expected: " & vec2str(X"B") & -- TODO: This should match the value in the assert
                    ". Got: " & vec2str(o_data)
             severity error; -- The report statement tells the user what time the
                             -- failure occured at, and what was expected
         sL <= '1';
-        mode <= ____; -- TODO: shift to the left
+        mode <= "10"; -- TODO: shift to the left
         wait for clk_period;
         assert o_data = X"7"
             report "Shift register failed to shift left at: " & time'image(now) &
@@ -124,7 +124,7 @@ end component;
                    ". Got: " & vec2str(o_data)
             severity error;
 
-        sL <= ____; -- TODO: Fill this value in to create 0xE
+        sL <= '0'; -- TODO: Fill this value in to create 0xE
         wait for clk_period;
         assert o_data = X"E"
             report "Shift register failed to shift left at: " & time'image(now) &
@@ -135,21 +135,21 @@ end component;
         sR <= '1';
         mode <= "01"; --shift to the right
         wait for clk_period;
-        assert o_data = ____ -- TODO: Fill this value in
+        assert o_data = X"F" -- TODO: Fill this value in
             report "Shift register failed to shift right at: " & time'image(now) &
-                   ". Expected: " & vec2str(____) & -- TODO: This should match the value in the assert
+                   ". Expected: " & vec2str(X"F") & -- TODO: This should match the value in the assert
                    ". Got: " & vec2str(o_data)
             severity error;
 
         sR <= '0';
         wait for clk_period;
-        assert o_data = ____ -- TODO: Fill this value in
+        assert o_data = X"7"-- TODO: Fill this value in
             report "Shift register failed to shift right at: " & time'image(now) &
-                   ". Expected: " & vec2str(____) & -- TODO: This should match the value in the assert
+                   ". Expected: " & vec2str(X"7") & -- TODO: This should match the value in the assert
                    ". Got: " & vec2str(o_data)
             severity error;
 
-        mode <= ____; -- TODO: Hold
+        mode <= "00"; -- TODO: Hold
         wait for clk_period*3; -- hold for multiple cycles
         assert o_data = X"7"
             report "Shift register failed to shift right at: " & time'image(now) &
