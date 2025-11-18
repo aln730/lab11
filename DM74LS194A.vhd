@@ -13,45 +13,51 @@ entity DM74LS194A is
 end DM74LS194A;
 
 architecture behv of DM74LS194A is
-    signal q : std_logic_vector(3 downto 0);
+    signal QA_reg, QB_reg, QC_reg, QD_reg : std_logic := '0';
 begin
 
-    process(Clear)
+    QA <= QA_reg;
+    QB <= QB_reg;
+    QC <= QC_reg;
+    QD <= QD_reg;
+
+    process (Clear, Clock)
     begin
+        -- Asynchronous clear
         if Clear = '0' then
-            q <= (others => '0') after 22 ns;
-        end if;
-    end process;
+            QA_reg <= '0' after 22 ns;
+            QB_reg <= '0' after 22 ns;
+            QC_reg <= '0' after 22 ns;
+            QD_reg <= '0' after 22 ns;
 
-    process(Clock)
-        variable mode : std_logic_vector(1 downto 0);
-    begin
-        if rising_edge(Clock) then
+        elsif rising_edge(Clock) then
 
-            mode := S1 & S0;
+            -- MODE decoding (S1 S0)
+            case (S1 & S0) is
+                when "1X" =>
+                    -- hold - do nothing (retain values)
+                when "11" =>
+                    QA_reg <= A after 22 ns;
+                    QB_reg <= B after 22 ns;
+                    QC_reg <= C after 22 ns;
+                    QD_reg <= D after 22 ns;
 
-            case mode is
+                when "10" =>
+                    QA_reg <= SR     after 22 ns;
+                    QB_reg <= QA_reg after 22 ns;
+                    QC_reg <= QB_reg after 22 ns;
+                    QD_reg <= QC_reg after 22 ns;
 
-                when "11" =>        -- Parallel Load
-                    q <= A & B & C & D after 22 ns;
+                when "01" =>
+                    QD_reg <= SL     after 22 ns;
+                    QC_reg <= QD_reg after 22 ns;
+                    QB_reg <= QC_reg after 22 ns;
+                    QA_reg <= QB_reg after 22 ns;
 
-                when "01" =>        -- Shift Right
-                    q <= SR & q(3 downto 1) after 22 ns;
-
-                when "10" =>        -- Shift Left
-                    q <= q(2 downto 0) & SL after 22 ns;
-
-                when others =>      -- Hold
-                    q <= q after 22 ns;
-
+                when others =>
+                    null;
             end case;
-
         end if;
+
     end process;
-
-    QA <= q(3);
-    QB <= q(2);
-    QC <= q(1);
-    QD <= q(0);
-
-end architecture behv;
+end behv;
