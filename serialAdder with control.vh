@@ -1,7 +1,10 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
+-------------------------------------------------------------------------------
+-- 1-bit Full Adder
+-------------------------------------------------------------------------------
 entity my_full_adder is
     port(
         A, B, Cin : in  std_logic;
@@ -15,6 +18,9 @@ begin
     Cout <= (A and B) or (Cin and (A xor B)) after 8 ns;
 end architecture;
 
+-------------------------------------------------------------------------------
+-- D Flip-Flop
+-------------------------------------------------------------------------------
 entity my_dff is
     port(
         clk   : in  std_logic;
@@ -38,15 +44,20 @@ begin
             end if;
         end if;
     end process;
+
     Q <= q_i;
 end architecture;
 
+-------------------------------------------------------------------------------
+-- 4-bit Shift Register (with serial input feedback)
+-------------------------------------------------------------------------------
 entity my_shift_register is
     port(
         clk         : in  std_logic;
         clear_dp    : in  std_logic;
-        s1, s0     : in  std_logic;
+        s1, s0      : in  std_logic;
         parallel_in : in  std_logic_vector(3 downto 0);
+        serial_in   : in  std_logic;
         serial_out  : out std_logic_vector(3 downto 0)
     );
 end entity;
@@ -60,9 +71,13 @@ begin
             if clear_dp = '1' then
                 reg <= (others => '0');
             elsif s1 = '1' and s0 = '1' then
-                reg <= parallel_in;
+                reg <= parallel_in;  -- Parallel load
             elsif s1 = '0' and s0 = '1' then
-                reg <= reg(2 downto 0) & '0';
+                reg <= reg(2 downto 0) & serial_in; -- Shift left with serial input
+            elsif s1 = '1' and s0 = '0' then
+                reg <= serial_in & reg(3 downto 1); -- Shift right with serial input
+            else
+                reg <= reg; -- Hold
             end if;
         end if;
     end process;
@@ -70,6 +85,9 @@ begin
     serial_out <= reg;
 end architecture;
 
+-------------------------------------------------------------------------------
+-- Serial Adder Control Unit
+-------------------------------------------------------------------------------
 entity my_serial_adder_control is
     port(
         clk            : in  std_logic;
@@ -83,6 +101,7 @@ architecture behavioral of my_serial_adder_control is
     type state_type is (IDLE, RESET, LOAD, S1, S2, S3, S4, HOLD);
     signal state, next_state : state_type;
 begin
+    -- State register
     process(clk)
     begin
         if rising_edge(clk) then
@@ -94,11 +113,11 @@ begin
         end if;
     end process;
 
+    -- Next state logic
     process(state, start)
     begin
         case state is
-            when IDLE =>
-                if start = '1' then next_state <= RESET; else next_state <= IDLE; end if;
+            when IDLE  => if start = '1' then next_state <= RESET; else next_state <= IDLE; end if;
             when RESET => next_state <= LOAD;
             when LOAD  => next_state <= S1;
             when S1    => next_state <= S2;
@@ -110,19 +129,23 @@ begin
         end case;
     end process;
 
+    -- Output logic with 10 ns delay
     process(state)
     begin
         case state is
-            when IDLE   => control_output <= "1100" after 10 ns;
-            when RESET  => control_output <= "0000" after 10 ns;
-            when LOAD   => control_output <= "0111" after 10 ns;
+            when IDLE        => control_output <= "1100" after 10 ns;
+            when RESET       => control_output <= "0000" after 10 ns;
+            when LOAD        => control_output <= "0111" after 10 ns;
             when S1|S2|S3|S4 => control_output <= "0101" after 10 ns;
-            when HOLD   => control_output <= "0100" after 10 ns;
-            when others => control_output <= "0000" after 10 ns;
+            when HOLD        => control_output <= "0100" after 10 ns;
+            when others      => control_output <= "0000" after 10 ns;
         end case;
     end process;
 end architecture;
 
+-------------------------------------------------------------------------------
+-- Complete Serial Adder (Structural Model)
+-------------------------------------------------------------------------------
 entity serial_adder_complete is
     port(
         clk      : in  std_logic;
@@ -145,8 +168,8 @@ architecture structural of serial_adder_complete is
 
     -- Datapath signals
     signal regA_out, regB_out : std_logic_vector(3 downto 0);
-    signal carry_ff           : std_logic;
     signal sum_bit            : std_logic;
+    signal carry_ff, next_carry : std_logic;
 
 begin
     -- Control Unit
@@ -164,37 +187,51 @@ begin
     s1       <= control_out(1);
     s0       <= control_out(0);
 
-    -- Shift Registers
+    -- Shift Registers with feedback
     REG_A: my_shift_register
-        port map(clk => clk, clear_dp => clear_dp, s1 => s1, s0 => s0,
-                 parallel_in => inA, serial_out => regA_out);
+        port map(
+            clk => clk,
+            clear_dp => clear_dp,
+            s1 => s1,
+            s0 => s0,
+            parallel_in => inA,
+            serial_in => sum_bit,  -- sum feedback
+            serial_out => regA_out
+        );
 
     REG_B: my_shift_register
-        port map(clk => clk, clear_dp => clear_dp, s1 => s1, s0 => s0,
-                 parallel_in => inB, serial_out => regB_out);
+        port map(
+            clk => clk,
+            clear_dp => clear_dp,
+            s1 => s1,
+            s0 => s0,
+            parallel_in => inB,
+            serial_in => '0',  -- always shift 0 into B
+            serial_out => regB_out
+        );
 
     -- Full Adder
     FA: my_full_adder
-        port map(A => regA_out(0), B => regB_out(0), Cin => carry_ff,
-                 Sum => sum_bit, Cout => carry_ff);
-
-    -- Feed sum back into regA LSB
-    process(clk)
-    begin
-        if rising_edge(clk) then
-            if clear_dp = '1' then
-                regA_out(0) <= '0';
-            elsif s1 = '0' and s0 = '1' then
-                regA_out(0) <= sum_bit;
-            end if;
-        end if;
-    end process;
+        port map(
+            A => regA_out(0),
+            B => regB_out(0),
+            Cin => carry_ff,
+            Sum => sum_bit,
+            Cout => next_carry
+        );
 
     -- Carry flip-flop
     CARRY_FF: my_dff
-        port map(clk => clk, clear => clear_dp, en => s1, D => carry_ff, Q => cout);
+        port map(
+            clk => clk,
+            clear => clear_dp,
+            en => s1,
+            D => next_carry,
+            Q => carry_ff
+        );
 
     -- Output sum
     sum <= regA_out;
+    cout <= carry_ff;
 
 end architecture;
