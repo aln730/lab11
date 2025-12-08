@@ -3,10 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 -------------------------------------------------------------------------------
--- In order for this test bench to work, you will need to update the component
--- name to match what is in your shift register vhd file. If you have chosen
--- to parallelize the inputs, be sure to update the component below
--- appropriately. Finally, there are assert statements that must be filled in.
+-- Testbench for DM74LS194A Shift Register
 -------------------------------------------------------------------------------
 
 entity tb_DM74LS194A is
@@ -14,152 +11,144 @@ end tb_DM74LS194A;
 
 architecture behav of tb_DM74LS194A is
 
-component DM74LS194A is
-  port (a, b, c, d : in std_logic;
-        clk, clear : in std_logic;
-		s0, s1     : in std_logic;
-		sL, sR     : in std_logic;
-		qa, qb, qc, qd : out std_logic);
-end component;
--- Possible parallel component. Signal names will likely need updating!
--- component DM74LS194A is
--- port (parallel_load  : in  std_logic_vector(3 downto 0);
---       clk, clear     : in  std_logic;
---		 control        : in  std_logic_vector(1 downto 0);
---		 sL, sR         : in  std_logic;
---		 outputs        : out std_logic_vector(3 downto 0));
--- end component;
+    -- Component declaration
+    component DM74LS194A is
+        port (
+            a, b, c, d : in std_logic;
+            clk, clear : in std_logic;
+            s0, s1     : in std_logic;
+            sL, sR     : in std_logic;
+            qa, qb, qc, qd : out std_logic
+        );
+    end component;
 
-    -- Helper function to print std_logic_vectors more easily
+    -- Helper function to print std_logic_vectors
     function vec2str(vec: std_logic_vector) return string is
         variable stmp: string(vec'high+1 downto 1);
         variable counter : integer := 1;
     begin
         for i in vec'reverse_range loop
-            stmp(counter) := std_logic'image(vec(i))(2); -- image returns '1' (with quotes)
+            stmp(counter) := std_logic'image(vec(i))(2);
             counter := counter + 1;
         end loop;
         return stmp;
     end vec2str;
 
-	constant clk_period : time := 100 ns;
+    -- Clock period
+    constant clk_period : time := 100 ns;
+
     -- Inputs
-	signal i_data : std_logic_vector(3 downto 0) := (others => '0');
-	signal clk : std_logic := '0';
-	signal clear : std_logic := '0';
-	signal mode : std_logic_vector(1 downto 0) := (others => '0');
-	signal sL : std_logic := '0';
-	signal sR : std_logic := '0';
+    signal i_data : std_logic_vector(3 downto 0) := (others => '0');
+    signal clk    : std_logic := '0';
+    signal clear  : std_logic := '0';
+    signal mode   : std_logic_vector(1 downto 0) := (others => '0');
+    signal sL     : std_logic := '0';
+    signal sR     : std_logic := '0';
+
     -- Outputs
-	signal o_data : std_logic_vector(3 downto 0);
+    signal o_data : std_logic_vector(3 downto 0);
     signal qa, qb, qc, qd : std_logic;
 
-	begin
-	UUT: DM74LS194A
-    port map (
-		a => i_data(3),
-		b => i_data(2),
-		c => i_data(1),
-		d => i_data(0),
-		clk => clk,
-		clear => clear,
-		s0 => mode(0),
-		s1 => mode(1),
-		sL => sL,
-		sR => sR,
-		qa => qa,
-		qb => qb,
-		qc => qc,
-		qd => qd
-	);
+begin
 
--- Possible parallel component. Signal names will likely need updating!
--- UUT: DM74LS194A
--- port map (
---     parallel_load => i_data,
---     clk => clk,
---     clear => clear,
---     control => mode,
---     sL => sL,
---     sR => sR,
---     outputs => o_data
--- );
+    -- Instantiate the shift register
+    UUT: DM74LS194A
+        port map (
+            a => i_data(3),
+            b => i_data(2),
+            c => i_data(1),
+            d => i_data(0),
+            clk => clk,
+            clear => clear,
+            s0 => mode(0),
+            s1 => mode(1),
+            sL => sL,
+            sR => sR,
+            qa => qa,
+            qb => qb,
+            qc => qc,
+            qd => qd
+        );
 
-    o_data<= (qa,qb,qc,qd);
+    -- Combine outputs
+    o_data <= qa & qb & qc & qd;
 
-	clk_process: process
-	begin
-		clk <= '0';
-		wait for clk_period/2;
-		clk <= '1';
-		wait for clk_period/2;
-	end process clk_process;
+    -- Clock generation
+    clk_process: process
+    begin
+        clk <= '0';
+        wait for clk_period/2;
+        clk <= '1';
+        wait for clk_period/2;
+    end process clk_process;
 
-	rst_process: process
-	begin
-		clear <= '0';
-		wait for clk_period/4;
-		clear <= '1';
-		wait;
-	end process rst_process;
+    -- Reset process
+    rst_process: process
+    begin
+        clear <= '0';
+        wait for clk_period/4;
+        clear <= '1';
+        wait;
+    end process rst_process;
 
-	_process: process
+    -- Stimulus process
+    stim_process: process
     begin
         wait until clear = '1'; -- Wait for reset to finish
-        i_data <= X"B"; -- TODO: Fill this value in
-        mode <= "11"; -- load into the shift register
-        wait fstimor clk_period;
-        assert o_data = X"B"
+
+        -- Load B = 1011
+        i_data <= "1011";
+        mode <= "11"; -- Load mode
+        wait for clk_period;
+        assert o_data = "1011"
             report "Shift register failed to load at: " & time'image(now) &
-                   ". Expected: " & vec2str(X"B") & -- TODO: This should match the value in the assert
-                   ". Got: " & vec2str(o_data)
-            severity error; -- The report statement tells the user what time the
-                            -- failure occured at, and what was expected
+                   ". Expected: 1011, Got: " & vec2str(o_data)
+            severity error;
+
+        -- Shift left
         sL <= '1';
-        mode <= "10"; -- TODO: shift to the left
+        mode <= "10";
         wait for clk_period;
-        assert o_data = X"7"
+        assert o_data = "0111"
             report "Shift register failed to shift left at: " & time'image(now) &
-                   ". Expected: " & vec2str(X"7") &
-                   ". Got: " & vec2str(o_data)
+                   ". Expected: 0111, Got: " & vec2str(o_data)
             severity error;
 
-        sL <= '0'; -- TODO: Fill this value in to create 0xE
+        sL <= '0';
         wait for clk_period;
-        assert o_data = X"E"
+        assert o_data = "1110"
             report "Shift register failed to shift left at: " & time'image(now) &
-                   ". Expected: " & vec2str(X"E") &
-                   ". Got: " & vec2str(o_data)
+                   ". Expected: 1110, Got: " & vec2str(o_data)
             severity error;
 
+        -- Shift right
         sR <= '1';
-        mode <= "01"; --shift to the right
+        mode <= "01";
         wait for clk_period;
-        assert o_data = X"F" -- TODO: Fill this value in
+        assert o_data = "1111"
             report "Shift register failed to shift right at: " & time'image(now) &
-                   ". Expected: " & vec2str(X"F") & -- TODO: This should match the value in the assert
-                   ". Got: " & vec2str(o_data)
+                   ". Expected: 1111, Got: " & vec2str(o_data)
             severity error;
 
         sR <= '0';
         wait for clk_period;
-        assert o_data = X"7"-- TODO: Fill this value in
+        assert o_data = "0111"
             report "Shift register failed to shift right at: " & time'image(now) &
-                   ". Expected: " & vec2str(X"7") & -- TODO: This should match the value in the assert
-                   ". Got: " & vec2str(o_data)
+                   ". Expected: 0111, Got: " & vec2str(o_data)
             severity error;
 
-        mode <= "00"; -- TODO: Hold
-        wait for clk_period*3; -- hold for multiple cycles
-        assert o_data = X"7"
-            report "Shift register failed to shift right at: " & time'image(now) &
-                   ". Expected: " & vec2str(X"7") &
-                   ". Got: " & vec2str(o_data)
+        -- Hold
+        mode <= "00";
+        wait for clk_period*3;
+        assert o_data = "0111"
+            report "Shift register hold failed at: " & time'image(now) &
+                   ". Expected: 0111, Got: " & vec2str(o_data)
             severity error;
 
-		assert false
-			report "Simulation finished"
-			severity failure;
-	end process stim_process;
+        -- Finish simulation
+        assert false
+            report "Simulation finished"
+            severity failure;
+    end process stim_process;
 
 end behav;
