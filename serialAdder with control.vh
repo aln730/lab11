@@ -49,7 +49,7 @@ begin
 end architecture;
 
 -------------------------------------------------------------------------------
--- 4-bit Shift Register (with serial input feedback)
+-- 4-bit Shift Register
 -------------------------------------------------------------------------------
 entity my_shift_register is
     port(
@@ -195,7 +195,7 @@ begin
             s1 => s1,
             s0 => s0,
             parallel_in => inA,
-            serial_in => sum_bit,  -- sum feedback
+            serial_in => sum_bit,
             serial_out => regA_out
         );
 
@@ -206,7 +206,7 @@ begin
             s1 => s1,
             s0 => s0,
             parallel_in => inB,
-            serial_in => '0',  -- always shift 0 into B
+            serial_in => '0',
             serial_out => regB_out
         );
 
@@ -230,7 +230,7 @@ begin
             Q => carry_ff
         );
 
-    -- Output sum
+    -- Output sum and carry
     sum <= regA_out;
     cout <= carry_ff;
 
