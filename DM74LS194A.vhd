@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
 entity DM74LS194A is
     port (
@@ -23,7 +24,6 @@ begin
 
     process (Clear, Clock)
     begin
-        -- Asynchronous clear
         if Clear = '0' then
             QA_reg <= '0' after 22 ns;
             QB_reg <= '0' after 22 ns;
@@ -31,33 +31,26 @@ begin
             QD_reg <= '0' after 22 ns;
 
         elsif rising_edge(Clock) then
-
             -- MODE decoding (S1 S0)
-            case to_integer(unsigned(s1 & s0)) is
-                when "1X" =>
-                    -- hold - do nothing (retain values)
-                when "11" =>
-                    QA_reg <= A after 22 ns;
-                    QB_reg <= B after 22 ns;
-                    QC_reg <= C after 22 ns;
-                    QD_reg <= D after 22 ns;
-
-                when "10" =>
-                    QA_reg <= SR     after 22 ns;
-                    QB_reg <= QA_reg after 22 ns;
-                    QC_reg <= QB_reg after 22 ns;
-                    QD_reg <= QC_reg after 22 ns;
-
-                when "01" =>
-                    QD_reg <= SL     after 22 ns;
-                    QC_reg <= QD_reg after 22 ns;
-                    QB_reg <= QC_reg after 22 ns;
-                    QA_reg <= QB_reg after 22 ns;
-
-                when others =>
-                    null;
-            end case;
+            if (S1 = '1' and S0 = '1') then
+                QA_reg <= A after 22 ns;
+                QB_reg <= B after 22 ns;
+                QC_reg <= C after 22 ns;
+                QD_reg <= D after 22 ns;
+            elsif (S1 = '1' and S0 = '0') then
+                QA_reg <= SR     after 22 ns;
+                QB_reg <= QA_reg after 22 ns;
+                QC_reg <= QB_reg after 22 ns;
+                QD_reg <= QC_reg after 22 ns;
+            elsif (S1 = '0' and S0 = '1') then
+                QD_reg <= SL     after 22 ns;
+                QC_reg <= QD_reg after 22 ns;
+                QB_reg <= QC_reg after 22 ns;
+                QA_reg <= QB_reg after 22 ns;
+            else -- 00
+                null; -- hold
+            end if;
         end if;
-
     end process;
+
 end behv;
